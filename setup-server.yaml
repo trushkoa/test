@@ -1,0 +1,19 @@
+---
+- name: Configuring server
+  hosts: awx
+  become: true
+  roles:
+    # - create_user
+    - settings
+    - ssh_keys
+    - packages
+    - install_docker
+    - iptables
+  tags: basic
+
+- name: Reboot server
+  hosts: production
+  serial: 1
+  become: true
+  roles:
+    - reboot_server

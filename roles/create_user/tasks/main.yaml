@@ -1,0 +1,98 @@
+- name: Install aptitude
+  apt:
+    name: aptitude
+    state: latest
+    update_cache: true
+
+- name: Setup passwordless sudo
+  lineinfile:
+    path: /etc/sudoers
+    state: present
+    regexp: ^%sudo
+    line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+    validate: "/usr/sbin/visudo -cf %s"
+
+- name: Create a new sudo user
+  user:
+    name: '{{ default_username }}'
+    state: present
+    groups: sudo
+    append: true
+    create_home: true
+
+- name: Set SSH key for user
+  ansible.posix.authorized_key:
+    user: '{{ default_username }}'
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_ed25519.pub')\ }}"
+
+- name: Disable password login for root
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: ^#?PermitRootLogin
+    line: PermitRootLogin prohibit-password
+
+# - name: Install git
+#   apt:
+#     name: git
+#     state: present
+#     update_cache: yes
+
+- name: Install zsh
+  # when: enable_custom_shell
+  apt:
+    name: zsh
+    state: latest
+  register: zsh_installed
+
+- name: Clone oh-my-zsh
+  # when: enable_custom_shell
+  git:
+    repo: https://github.com/robbyrussell/oh-my-zsh.git
+    dest: /home/{{ default_username }}/.oh-my-zsh
+    clone: yes
+    update: false
+  register: oh_my_zsh_cloned
+
+- name: Set correct owner for oh-my-zsh files
+  # when: oh_my_zsh_cloned|succeeded
+  file:
+    path: /home/{{ default_username }}/.oh-my-zsh/
+    owner: "{{ default_username }}"
+    group: "{{ default_username }}"
+    mode: u=rwX,g=rX,o=rX
+    recurse: yes
+
+- name: Download custom oh-my-zsh theme
+  # when: oh_my_zsh_cloned|succeeded
+  get_url:
+    url: https://gist.githubusercontent.com/lukeharvey/992fca16c6f5d1b66f75b9e1b17ab308/raw/guru2.zsh-theme
+    dest: /home/{{ default_username }}/.oh-my-zsh/themes/guru2.zsh-theme
+    owner: "{{ default_username }}"
+    group: "{{ default_username }}"
+    mode: 0644
+
+- name: Download z.sh
+  # when: enable_custom_shell
+  get_url:
+    url: https://raw.githubusercontent.com/rupa/z/master/z.sh
+    dest: /home/{{ default_username }}/z.sh
+    owner: "{{ default_username }}"
+    group: "{{ default_username }}"
+    mode: 0644
+
+- name: Copy over zshrc
+  # when: enable_custom_shell
+  template:
+    src: ./src/zsh/zshrc.j2
+    dest: /home/{{ default_username }}/.zshrc
+    owner: "{{ default_username }}"
+    group: "{{ default_username }}"
+    mode: 0644
+
+- name: Set zsh as default shell
+  # when: zsh_installed|succeeded
+  user:
+    name: "{{ default_username }}"
+    shell: /bin/zsh

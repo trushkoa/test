@@ -1,0 +1,72 @@
+---
+- name: Install package managers and dependencies
+  apt:
+    name:
+      - aptitude
+    state: present
+
+- name: Upgrade all packages to the latest version # noqa package-latest
+  apt:
+    name: "*"
+    state: latest
+    update_cache: yes
+
+- name: Ensure dependencies are installed.
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - vim
+      - tmux
+      - apt-transport-https
+      - htop
+      - software-properties-common
+      - curl
+      - gnupg
+      - git
+      - git-lfs
+      # - gcc
+      # - gcc-multilib
+      # - g++
+      # - g++-multilib
+      # - tcpdump
+      # - traceroute
+      # - dnsutils
+      # - net-tools
+      # - gdb
+      # - atop
+      # - iftop
+      # - iotop
+      # - smartmontools
+      # - strace
+      # - mc
+      # - python
+      # - python-dev
+      # - python3-pip
+      # - python3
+      # - python3-dev
+      # - cmake
+      # - ccache
+      # - clang
+      # - libvirt-daemon-system
+      # - libvirt-clients
+      # - bridge-utils
+      # - binutils
+      # - autoconf
+      # - autotools-dev
+      # - automake
+      # - libtool
+      # - nmap
+      # - vlan
+      # - jq
+      # - lftp
+      # - libguestfs-tools
+      # - python3-libvirt
+      # - virtinst
+      # - python3-lxml
+      # - libvirt-dev
+      # - ruby
+      # - python3-docker
+      - dnsmasq
+    state: present
+    update_cache: yes

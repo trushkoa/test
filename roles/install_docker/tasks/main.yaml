@@ -1,0 +1,80 @@
+---
+- name: Add Docker apt key.
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    id: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+    state: present
+
+- name: Add Docker gpg key for debian. # noqa risky-shell-pipe
+  shell: curl -sSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+  changed_when: False
+
+- name: Add Docker repository for debian.
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable"
+    state: present
+
+- name: Update grub commands
+  ansible.builtin.replace:
+    path: "/etc/default/grub"
+    regexp: '^GRUB_CMDLINE_LINUX='
+    replace: 'GRUB_CMDLINE_LINUX="systemd.unified_cgroup_hierarchy=false systemd.legacy_systemd_cgroup_controller=false swapaccount=1"'
+
+- name: Update grub
+  shell: 
+    cmd: "update-grub"
+
+- name: Reboot host
+  reboot:
+
+- name: Ensure docker dependencies are installed.
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - cgroup-tools
+    state: present
+    update_cache: yes
+
+- name: Add user to group docker
+  user:
+    name: "{{ ansible_user }}"
+    groups: docker
+    append: yes
+
+- name: create docker dir
+  file:
+    path: /home/webpay/.docker
+    state: directory
+
+- name: Import ~/.docker/config.json
+  copy:
+    src: config.json
+    dest: /home/webpay/.docker/config.json
+
+- name: Import docker daemon.json config
+  copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Update list of services
+  shell: systemctl daemon-reload
+  changed_when: False
+
+- name: Enable service docker
+  service:
+    name: docker
+    enabled: yes
+
+- name: Restart service docker
+  service:
+    name: docker
+    state: restarted
+  changed_when: False
+
+- name: Install docker-compose
+  get_url:
+    url: https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
+    dest: /usr/local/bin/docker-compose
+    mode: 0755

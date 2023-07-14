@@ -1,0 +1,6 @@
+---
+- name: Configuring server
+  hosts: awx
+  become: true
+  roles:
+    - install_node_exporter

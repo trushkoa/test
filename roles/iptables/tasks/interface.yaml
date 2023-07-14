@@ -1,0 +1,78 @@
+---
+- name: "Flush {{ chain }} chain"
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    flush: yes
+  become: yes
+
+- name: "Allow traffic from VPN "
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    protocol: all
+    jump: ACCEPT
+    in_interface: "{{ interface }}"
+    source: "0.0.0.0/0"
+  become: yes
+  when: ansible_host == "production"
+
+# - name: "Allow traffic from and office network "
+#   ansible.builtin.iptables:
+#     chain: "{{ chain }}"
+#     protocol: all
+#     jump: ACCEPT
+#     in_interface: "{{ interface }}"
+#     source: "192.168.10.0/23"
+#   become: yes
+#   when: ansible_host == "office-ip"
+
+- name: "Allow all ICMP for {{ chain }} chain and {{ interface }} interface"
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    protocol: icmp
+    jump: ACCEPT
+    in_interface: "{{ interface }}"
+  become: yes
+
+- name: "Allow related and established connections for {{ chain }} chain on {{ interface }} interface"
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    protocol: all
+    ctstate: ESTABLISHED,RELATED
+    jump: ACCEPT
+    in_interface: "{{ interface }}"
+  become: yes
+
+- name: "Allow all traffic from {{ ip }} for {{ chain }} chain on {{ interface }} interface"
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    protocol: all
+    jump: ACCEPT
+    in_interface: "{{ interface }}"
+    source: "{{ ip }}"
+  become: yes
+  loop: "{{ wan_networks }}"
+  loop_control:
+    loop_var: ip
+
+- name: "Allow all TCP traffic to {{ port }} for {{ chain }} chain and {{ interface }} interface"
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    protocol: tcp
+    jump: ACCEPT
+    in_interface: "{{ interface }}"
+    destination_port: "{{ port | int }}"
+  become: yes
+  loop: "{{ public_tcp_ports }}"
+  loop_control:
+    loop_var: port
+
+- name: "Log 100/minute drops for {{ chain }} chain and {{ interface }} interface"
+  command: '/sbin/iptables -A {{ chain }} --in-interface {{ interface }} -m limit --limit 100/m -j NFLOG --nflog-group 1 --nflog-prefix "IPTABLES: INFO:"'
+  become: yes
+
+- name: "Reject all the rest for {{ chain }} chain and {{ interface }} interface"
+  ansible.builtin.iptables:
+    chain: "{{ chain }}"
+    jump: REJECT
+    in_interface: "{{ interface }}"
+  become: yes

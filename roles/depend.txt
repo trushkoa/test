@@ -1,0 +1,7 @@
+tar
+unzip
+sealinux
+firewalld
+
+sudo yum install tar
+sudo dnf -y install unzip

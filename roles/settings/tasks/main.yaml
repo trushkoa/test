@@ -1,0 +1,38 @@
+- name: Set hostname
+  hostname:
+     name: "webpay-{{ hostname }}"
+
+- name: Config /etc/hosts
+  template:
+    src: template/hosts.template
+    dest: /etc/hosts
+
+- name: Set timezone
+  become: true
+  timezone:
+   name: "{{ settimezone }}"
+
+- name: Add the 802.1q module
+  modprobe:
+    name: 8021q
+    state: present
+- name: Add module to boot
+  lineinfile:
+    path: /etc/modules
+    line: 8021q
+
+- name: Disable SWAP in fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+    replace: '# \1'
+
+- name: Set PS1.
+  lineinfile:
+    path: /home/webpay/.bashrc
+    line: export PS1="\[\e[36m\]\u\[\e[m\]\[\e[35m\]@\[\e[m\]\[\e[33m\]\h\[\e[m\]\[\e[32m\]:\[\e[m\]\[\e[32m\]\w\[\e[m\] "
+
+- name: Set PATH.
+  lineinfile:
+    path: /home/webpay/.bashrc
+    line: export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

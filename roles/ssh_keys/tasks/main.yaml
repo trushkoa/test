@@ -1,0 +1,20 @@
+- name: Import ssh keys
+  copy:
+    src: authorized_keys
+    dest: /home/webpay/.ssh/authorized_keys
+    force: yes
+  when: ('production' in group_names)
+
+- name: Import ssh keys staging
+  copy:
+    src: authorized_keys_staging
+    dest: /home/webpay/.ssh/authorized_keys
+    force: yes
+  when: ('staging' in group_names)
+
+- name: Import ssh keys scrapy
+  copy:
+    src: authorized_keys_scrapy
+    dest: /home/webpay/.ssh/authorized_keys
+    force: yes
+  when: ('preprod' in group_names)
